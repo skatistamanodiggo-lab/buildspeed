@@ -356,6 +356,10 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .btn-autofix { background: linear-gradient(135deg, #06d6a0, #059669); color: var(--bg); font-weight: 800; border: none; border-radius: 10px; padding: 13px; width: 100%; font-family: "Syne",sans-serif; font-size: 14px; cursor: pointer; margin-bottom: 8px; }
 .btn-autofix:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* ── BOTÃO PROMPT IA ── */
+.btn-ai-fix { background: linear-gradient(135deg, #7c3aed, #9333ea); color: white; font-weight: 800; border: none; border-radius: 10px; padding: 13px; width: 100%; font-family: "Syne",sans-serif; font-size: 14px; cursor: pointer; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.ai-prompt-modal .modal-box { max-width: 460px; text-align: left; }
+.ai-prompt-box { width: 100%; background: #0d0d14; border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-family: "Space Mono",monospace; font-size: 10px; color: #88cc88; height: 200px; resize: none; outline: none; line-height: 1.5; margin-bottom: 12px; }
 /* ── TOAST ── */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:13px;font-family:'Space Mono',monospace;z-index:300;transition:transform 0.3s;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
 .toast.show{transform:translateX(-50%) translateY(0)}
@@ -554,6 +558,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div class="diagnosis-msg" id="diagnosis-msg"></div>
       <div class="diagnosis-fix" id="diagnosis-fix"></div>
       <button class="btn-autofix" id="btn-autofix" onclick="applyAutofix()">🔧 Corrigir automaticamente e tentar novamente</button>
+      <button class="btn-ai-fix" onclick="openAiPrompt()">🤖 Corrigir com IA — Ver prompt</button>
       <button class="btn-modal-close" onclick="document.getElementById('diagnosis-card').classList.remove('active')">Fechar</button>
     </div>
     <div class="log-toggle" onclick="toggleLog()">▼ ver logs em tempo real</div>
@@ -605,6 +610,24 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <button class="btn-subscribe" onclick="openYouTube()">▶️ SE INSCREVER E BAIXAR MEU APP</button>
     <button class="btn-free-download" id="btn-free-download-modal" onclick="confirmDownload()">⬇️ DOWNLOAD GRÁTIS</button>
     <button class="btn-modal-close" onclick="closeModal()">Agora não</button>
+  </div>
+</div>
+
+<!-- Modal Prompt IA -->
+<div class="modal-overlay ai-prompt-modal" id="ai-prompt-modal" style="display:none" onclick="if(event.target===this)closeAiPrompt()">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-size:16px;font-weight:800">🤖 Corrigir com IA</div>
+      <button onclick="closeAiPrompt()" style="background:transparent;border:none;color:var(--text2);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:12px;color:var(--text2);font-family:'Space Mono',monospace;line-height:1.6;margin-bottom:12px">
+      Copie este prompt e cole em qualquer IA (ChatGPT, Claude, Gemini) junto com os arquivos do seu projeto. A IA vai corrigir automaticamente para funcionar no BuildSpeed.
+    </div>
+    <textarea class="ai-prompt-box" id="ai-prompt-text" readonly onclick="this.select()"></textarea>
+    <button onclick="copyAiPrompt()" class="btn btn-primary" style="margin-bottom:10px;padding:12px;font-size:14px">
+      📋 Copiar prompt completo
+    </button>
+    <button onclick="closeAiPrompt()" class="btn-modal-close">Fechar</button>
   </div>
 </div>
 
@@ -1405,6 +1428,71 @@ function resetApp() {
   // Voltar ao dashboard
   document.getElementById('app-main').style.display = 'none';
   showDashboard();
+}
+
+// ══════════════════════════════════
+// PROMPT IA
+// ══════════════════════════════════
+const AI_PROMPT_TEXT = `Você é um especialista em React Native e Expo. Preciso que você analise e corrija meu projeto para funcionar com o BuildSpeed.
+
+ESTRUTURA OBRIGATÓRIA:
+meu-app/
+├── App.js
+├── app.json
+├── package.json
+├── babel.config.js
+└── assets/ (icon.png, adaptive-icon.png, splash.png)
+
+REGRAS DO app.json:
+- NÃO inclua "sdkVersion"
+- Inclua "android.package" (ex: com.empresa.meuapp)
+- Slug: minúsculo, sem espaços
+
+babel.config.js OBRIGATÓRIO:
+module.exports = function(api) {
+  api.cache(true);
+  return { presets: ['babel-preset-expo'] };
+};
+
+package.json:
+- "main": "node_modules/expo/AppEntry.js"
+- Se usar Expo 51: react@18.2.0, react-native@0.74.5
+- Se usar Expo 53: react@19.0.0, react-native@0.79.6
+- NUNCA use react-native@0.79.0 (tem bug)
+
+ASSETS:
+- Crie a pasta assets/ com PNGs válidos 1024x1024px
+
+NÃO MEXA:
+- Lógica do App.js
+- Componentes e telas
+- Funcionalidades existentes
+
+Analise meu projeto, liste os problemas encontrados e entregue o resultado da seguinte forma:
+
+ENTREGA PREFERENCIAL: Um arquivo ZIP pronto para download contendo o projeto corrigido, já no formato correto para enviar ao BuildSpeed.
+
+Se não for possível gerar o ZIP para download: entregue cada arquivo corrigido separadamente com o conteúdo completo, informando o nome e o caminho de cada um para que eu possa montar a estrutura e zipar manualmente.`;
+
+function openAiPrompt() {
+  document.getElementById('ai-prompt-text').value = AI_PROMPT_TEXT;
+  document.getElementById('ai-prompt-modal').style.display = 'flex';
+  setTimeout(() => document.getElementById('ai-prompt-text').select(), 100);
+}
+
+function closeAiPrompt() {
+  document.getElementById('ai-prompt-modal').style.display = 'none';
+}
+
+function copyAiPrompt() {
+  const ta = document.getElementById('ai-prompt-text');
+  ta.select();
+  try {
+    navigator.clipboard.writeText(ta.value).then(() => showToast('✅ Prompt copiado!'))
+      .catch(() => showToast('✅ Texto selecionado — copie com Ctrl+C'));
+  } catch(e) {
+    showToast('✅ Texto selecionado — segure e toque Copiar');
+  }
 }
 
 // ══════════════════════════════════
