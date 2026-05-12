@@ -338,6 +338,24 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .footer{text-align:center;padding:20px 0 8px;font-size:11px;color:var(--text2);font-family:'Space Mono',monospace;border-top:1px solid var(--border);margin-top:8px}
 .footer span{color:var(--accent2)}
 
+/* ── AVALIAÇÃO ── */
+.rating-modal .modal-box { text-align: center; }
+.stars { display: flex; justify-content: center; gap: 8px; margin: 16px 0; }
+.star { font-size: 36px; cursor: pointer; transition: transform 0.15s; filter: grayscale(1); opacity: 0.4; }
+.star.active { filter: none; opacity: 1; transform: scale(1.15); }
+.star:hover { transform: scale(1.2); filter: none; opacity: 0.8; }
+.rating-textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: "Space Mono",monospace; font-size: 12px; padding: 10px 12px; resize: none; outline: none; margin-bottom: 14px; height: 80px; }
+.rating-textarea:focus { border-color: var(--accent); }
+
+/* ── DIAGNÓSTICO DE ERRO ── */
+.diagnosis-card { background: rgba(247,37,133,0.06); border: 1px solid rgba(247,37,133,0.25); border-radius: 14px; padding: 16px; margin-top: 12px; display: none; animation: fadeUp 0.4s ease; }
+.diagnosis-card.active { display: block; }
+.diagnosis-title { font-size: 15px; font-weight: 800; margin-bottom: 6px; }
+.diagnosis-msg { font-size: 12px; color: var(--text2); font-family: "Space Mono",monospace; line-height: 1.6; margin-bottom: 12px; }
+.diagnosis-fix { font-size: 12px; color: #fcd34d; font-family: "Space Mono",monospace; line-height: 1.5; margin-bottom: 14px; padding: 8px 10px; background: rgba(251,191,36,0.08); border-radius: 8px; border: 1px solid rgba(251,191,36,0.2); }
+.btn-autofix { background: linear-gradient(135deg, #06d6a0, #059669); color: var(--bg); font-weight: 800; border: none; border-radius: 10px; padding: 13px; width: 100%; font-family: "Syne",sans-serif; font-size: 14px; cursor: pointer; margin-bottom: 8px; }
+.btn-autofix:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* ── TOAST ── */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:13px;font-family:'Space Mono',monospace;z-index:300;transition:transform 0.3s;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
 .toast.show{transform:translateX(-50%) translateY(0)}
@@ -531,6 +549,13 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <button id="btn-cancel" onclick="cancelBuild()" style="background:rgba(247,37,133,0.15);border:1px solid rgba(247,37,133,0.3);color:#f72585;border-radius:8px;padding:4px 10px;font-size:11px;font-family:Space Mono,monospace;cursor:pointer;white-space:nowrap;flex-shrink:0">✕ Cancelar</button>
     </div>
     <div class="prog-eta" id="prog-eta">Aguardando...</div>
+    <div class="diagnosis-card" id="diagnosis-card">
+      <div class="diagnosis-title" id="diagnosis-title"></div>
+      <div class="diagnosis-msg" id="diagnosis-msg"></div>
+      <div class="diagnosis-fix" id="diagnosis-fix"></div>
+      <button class="btn-autofix" id="btn-autofix" onclick="applyAutofix()">🔧 Corrigir automaticamente e tentar novamente</button>
+      <button class="btn-modal-close" onclick="document.getElementById('diagnosis-card').classList.remove('active')">Fechar</button>
+    </div>
     <div class="log-toggle" onclick="toggleLog()">▼ ver logs em tempo real</div>
     <div class="log-box" id="log-box"></div>
   </div>
@@ -580,6 +605,25 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <button class="btn-subscribe" onclick="openYouTube()">▶️ SE INSCREVER E BAIXAR MEU APP</button>
     <button class="btn-free-download" id="btn-free-download-modal" onclick="confirmDownload()">⬇️ DOWNLOAD GRÁTIS</button>
     <button class="btn-modal-close" onclick="closeModal()">Agora não</button>
+  </div>
+</div>
+
+<!-- Modal Avaliação -->
+<div class="modal-overlay rating-modal" id="rating-modal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-icon">🎉</div>
+    <div class="modal-title">Build concluído!</div>
+    <div class="modal-sub">Como foi sua experiência com o BuildSpeed?</div>
+    <div class="stars" id="stars-container">
+      <span class="star" onclick="setRating(1)">⭐</span>
+      <span class="star" onclick="setRating(2)">⭐</span>
+      <span class="star" onclick="setRating(3)">⭐</span>
+      <span class="star" onclick="setRating(4)">⭐</span>
+      <span class="star" onclick="setRating(5)">⭐</span>
+    </div>
+    <textarea class="rating-textarea" id="rating-text" placeholder="O que podemos melhorar? (opcional)"></textarea>
+    <button class="btn btn-primary" onclick="submitRating()" style="margin-bottom:10px">Enviar avaliação</button>
+    <button class="btn-modal-close" onclick="closeRatingModal()">Agora não</button>
   </div>
 </div>
 
@@ -1084,6 +1128,18 @@ async function startBuild() {
     if (!data.jobId) throw new Error(data.error || 'Erro ao iniciar build');
     state.jobId = data.jobId;
     state.buildStartTime = Date.now();
+    // Salvar params para possível autofix
+    lastBuildParams = {
+      source: state.source,
+      githubUrl: document.getElementById('github-url')?.value,
+      githubToken: document.getElementById('github-token')?.value,
+      appName: name, appPackage: pkg,
+      appVersion: document.getElementById('app-version')?.value || '1.0.0',
+      appVersionCode: document.getElementById('app-version-code')?.value || '1',
+      buildType: state.buildType,
+      expoEmail: document.getElementById('expo-email')?.value,
+      expoPassword: document.getElementById('expo-password')?.value
+    };
 
     // Salvar no histórico
     saveBuild({
@@ -1289,6 +1345,13 @@ function downloadFile() {
   document.getElementById('download-modal').style.display = 'flex';
 }
 
+function confirmDownloadAndRate() {
+  document.getElementById('download-modal').style.display = 'none';
+  window.open(state.buildUrl, '_blank');
+  // Abrir avaliação após 3 segundos
+  setTimeout(() => openRatingModal(), 3000);
+}
+
 function openYouTube() {
   window.open('https://www.youtube.com/@GrupoDIGGO','_blank');
   setTimeout(() => document.getElementById('btn-free-download-modal').classList.add('visible'), 2000);
@@ -1342,6 +1405,126 @@ function resetApp() {
   // Voltar ao dashboard
   document.getElementById('app-main').style.display = 'none';
   showDashboard();
+}
+
+// ══════════════════════════════════
+// AVALIAÇÃO PÓS-DOWNLOAD
+// ══════════════════════════════════
+let currentRating = 0;
+
+function openRatingModal() {
+  currentRating = 0;
+  document.getElementById('rating-text').value = '';
+  document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
+  document.getElementById('rating-modal').style.display = 'flex';
+}
+
+function closeRatingModal() {
+  document.getElementById('rating-modal').style.display = 'none';
+}
+
+function setRating(n) {
+  currentRating = n;
+  document.querySelectorAll('.star').forEach((s, i) => {
+    s.classList.toggle('active', i < n);
+  });
+}
+
+function submitRating() {
+  if (currentRating === 0) { showToast('⭐ Selecione uma avaliação'); return; }
+  const text = document.getElementById('rating-text').value.trim();
+  const ratings = JSON.parse(localStorage.getItem('bs-ratings') || '[]');
+  ratings.push({
+    stars: currentRating, text, date: new Date().toISOString(),
+    user: state.currentUser || 'visitante', appName: document.getElementById('app-name')?.value || ''
+  });
+  localStorage.setItem('bs-ratings', JSON.stringify(ratings.slice(-50)));
+  closeRatingModal();
+  showToast('✅ Obrigado pela avaliação!');
+}
+
+// ══════════════════════════════════
+// DIAGNÓSTICO E CORREÇÃO DE ERROS
+// ══════════════════════════════════
+let currentDiagnosis = null;
+let lastBuildParams = null;
+
+function showDiagnosis(diagnosis) {
+  currentDiagnosis = diagnosis;
+  const card = document.getElementById('diagnosis-card');
+  document.getElementById('diagnosis-title').textContent = diagnosis.title || '❌ Erro';
+  document.getElementById('diagnosis-msg').textContent = diagnosis.message || '';
+  document.getElementById('diagnosis-fix').textContent = '💡 ' + (diagnosis.fix || '');
+  const fixBtn = document.getElementById('btn-autofix');
+  if (diagnosis.autofix) {
+    fixBtn.style.display = 'block';
+    fixBtn.textContent = '🔧 Corrigir automaticamente e tentar novamente';
+    fixBtn.disabled = false;
+  } else {
+    fixBtn.style.display = 'none';
+  }
+  card.classList.add('active');
+}
+
+async function applyAutofix() {
+  if (!currentDiagnosis || !lastBuildParams) return;
+  const btn = document.getElementById('btn-autofix');
+  btn.disabled = true;
+  btn.textContent = '⏳ Aplicando correção...';
+  
+  // Reiniciar steps
+  ['ps-1','ps-2','ps-3','ps-4','ps-5'].forEach(id => {
+    document.getElementById(id).classList.remove('running','done','error');
+  });
+  document.getElementById('prog-bar').style.width = '0%';
+  document.getElementById('diagnosis-card').classList.remove('active');
+  document.getElementById('build-status-bar').textContent = '🔧 Aplicando correção automática...';
+  
+  // Reenviar build com flag de autofix
+  try {
+    const backendUrl = getBackendUrl();
+    let response;
+    const params = { ...lastBuildParams, autofix: currentDiagnosis.code };
+    
+    if (lastBuildParams.source === 'github') {
+      response = await fetch(backendUrl + '/build/github', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+      });
+    } else if (state.zipFile) {
+      const fd = new FormData();
+      fd.append('zip', state.zipFile);
+      Object.entries(params).forEach(([k,v]) => { if(v) fd.append(k, v); });
+      response = await fetch(backendUrl + '/build/zip', { method: 'POST', body: fd });
+    } else {
+      showToast('⚠️ ZIP original não disponível. Envie novamente.');
+      btn.disabled = false; return;
+    }
+    
+    const data = await response.json();
+    if (!data.jobId) throw new Error(data.error || 'Erro ao iniciar');
+    state.jobId = data.jobId;
+    state.buildStartTime = Date.now();
+    // Salvar params para possível autofix
+    lastBuildParams = {
+      source: state.source,
+      githubUrl: document.getElementById('github-url')?.value,
+      githubToken: document.getElementById('github-token')?.value,
+      appName: name, appPackage: pkg,
+      appVersion: document.getElementById('app-version')?.value || '1.0.0',
+      appVersionCode: document.getElementById('app-version-code')?.value || '1',
+      buildType: state.buildType,
+      expoEmail: document.getElementById('expo-email')?.value,
+      expoPassword: document.getElementById('expo-password')?.value
+    };
+    state.currentLog = '';
+    startStatusMessages();
+    startPolling(backendUrl, data.jobId, lastBuildParams.appName, lastBuildParams.appPackage);
+  } catch(err) {
+    showToast('❌ ' + err.message);
+    btn.disabled = false;
+    btn.textContent = '🔧 Corrigir automaticamente e tentar novamente';
+  }
 }
 
 function showToast(msg) {

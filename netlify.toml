@@ -1,0 +1,17 @@
+# BuildSpeed — Netlify Configuration
+# Deploy automático ao fazer push no GitHub
+
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "ALLOWALL"
+    Content-Security-Policy = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; frame-src *; frame-ancestors *;"
+    Access-Control-Allow-Origin = "*"
