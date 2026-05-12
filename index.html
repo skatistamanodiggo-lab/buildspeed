@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BuildSpeed | Grupo DIGGO</title>
-<!-- v3_20260512_050445 -->
+<!-- v3_20260512_064822_050445 -->
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c26;--border:#2a2a3a;--accent:#7c3aed;--accent2:#06d6a0;--accent3:#f72585;--text:#e8e8f0;--text2:#888899}
@@ -954,7 +954,6 @@ async function startBuild() {
   document.getElementById('dl-type').textContent = state.buildType.toUpperCase();
   document.getElementById('prog-bar').style.width = '0%';
   document.getElementById('log-box').textContent = '';
-  document.getElementById('countdown').textContent = '--:--';
   ['ps-1','ps-2','ps-3','ps-4','ps-5'].forEach(id => document.getElementById(id).classList.remove('running','done','error'));
 
   showCard(3); updateSteps(3);
