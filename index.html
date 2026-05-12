@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BuildSpeed | Grupo DIGGO</title>
+<!-- v3_20260512_050445 -->
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c26;--border:#2a2a3a;--accent:#7c3aed;--accent2:#06d6a0;--accent3:#f72585;--text:#e8e8f0;--text2:#888899}
@@ -261,7 +262,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .prog-detail{font-size:11px;color:var(--text2);font-family:'Space Mono',monospace;word-break:break-all}
 .prog-bar-wrap{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:8px}
 .prog-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;width:0%;transition:width 0.6s ease}
-.countdown{text-align:center;font-size:22px;font-weight:800;font-family:'Space Mono',monospace;color:var(--accent2);margin-bottom:6px;letter-spacing:2px}
+
 .prog-eta{text-align:center;font-size:11px;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:10px}
 .log-toggle{font-size:11px;color:var(--text2);font-family:'Space Mono',monospace;cursor:pointer;text-align:center;padding:6px;border:1px solid var(--border);border-radius:8px}
 .log-box{background:#0d0d14;border:1px solid var(--border);border-radius:10px;padding:12px;font-family:'Space Mono',monospace;font-size:11px;color:#88cc88;max-height:200px;overflow-y:auto;margin-top:8px;white-space:pre-wrap;word-break:break-all;display:none}
@@ -318,6 +319,12 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .badge-error{background:rgba(247,37,133,0.15);color:#f72585}
 .build-item-meta{font-size:11px;color:var(--text2);font-family:'Space Mono',monospace}
 .build-item-warn{font-size:10px;color:#fcd34d;font-family:'Space Mono',monospace;margin-top:4px}
+.build-item-actions{display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--border);padding-top:8px}
+.btn-del{background:rgba(247,37,133,0.1);border:1px solid rgba(247,37,133,0.3);color:#f72585;border-radius:8px;padding:6px 10px;font-size:11px;font-family:'Space Mono',monospace;cursor:pointer;flex:1}
+.btn-retry{background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);color:#a78bfa;border-radius:8px;padding:6px 10px;font-size:11px;font-family:'Space Mono',monospace;cursor:pointer;flex:1}
+.build-item-actions{display:flex;gap:8px;margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.btn-del{background:rgba(247,37,133,0.1);border:1px solid rgba(247,37,133,0.3);color:#f72585;border-radius:8px;padding:6px 12px;font-size:11px;font-family:'Space Mono',monospace;cursor:pointer;flex:1}
+.btn-retry{background:rgba(124,58,237,0.1);border:1px solid rgba(124,58,237,0.3);color:#a78bfa;border-radius:8px;padding:6px 12px;font-size:11px;font-family:'Space Mono',monospace;cursor:pointer;flex:1}
 .dash-new-btn{background:linear-gradient(135deg,var(--accent),#9333ea);color:white;border:none;border-radius:12px;padding:14px;width:100%;font-family:'Syne',sans-serif;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:16px;display:flex;align-items:center;justify-content:center;gap:8px}
 .empty-state{text-align:center;padding:32px 16px;color:var(--text2);font-family:'Space Mono',monospace;font-size:12px}
 
@@ -519,9 +526,11 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div class="prog-step" id="ps-4"><div class="prog-icon">🔑</div><div class="prog-info"><div class="prog-name">Autenticando Expo</div><div class="prog-detail" id="pd-4">Aguardando...</div></div></div>
       <div class="prog-step" id="ps-5"><div class="prog-icon">🚀</div><div class="prog-info"><div class="prog-name">Build EAS</div><div class="prog-detail" id="pd-5">Aguardando...</div></div></div>
     </div>
-    <div class="countdown" id="countdown">--:--</div>
-    <div class="prog-bar-wrap"><div class="prog-bar" id="prog-bar"></div></div>
-    <div class="prog-eta" id="prog-eta">Estimativa: ~10 minutos</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div class="prog-bar-wrap" style="flex:1;margin:0"><div class="prog-bar" id="prog-bar"></div></div>
+      <button id="btn-cancel" onclick="cancelBuild()" style="background:rgba(247,37,133,0.15);border:1px solid rgba(247,37,133,0.3);color:#f72585;border-radius:8px;padding:4px 10px;font-size:11px;font-family:Space Mono,monospace;cursor:pointer;white-space:nowrap;flex-shrink:0">✕ Cancelar</button>
+    </div>
+    <div class="prog-eta" id="prog-eta">Aguardando...</div>
     <div class="log-toggle" onclick="toggleLog()">▼ ver logs em tempo real</div>
     <div class="log-box" id="log-box"></div>
   </div>
@@ -686,15 +695,75 @@ function buildCard(b) {
   const badge = b.status === 'done' ? 'badge-done' : b.status === 'error' ? 'badge-error' : 'badge-running';
   const label = b.status === 'done' ? 'CONCLUÍDO' : b.status === 'error' ? 'FALHOU' : 'EM ANDAMENTO';
   const warn = b.status === 'done' && b.buildUrl ? '<div class="build-item-warn">⚠️ Link disponível por tempo limitado na Expo</div>' : '';
-  const click = b.buildUrl && b.status === 'done' ? `onclick="openBuildUrl('${b.buildUrl}')"` : b.status !== 'done' ? `onclick="resumeBuild('${b.id}')"` : '';
-  return `<div class="build-item" ${click}>
+  const dlBtn = b.buildUrl && b.status === 'done' ? `<button class="btn-retry" onclick="event.stopPropagation();openBuildUrl('${b.buildUrl}')">⬇️ Baixar</button>` : '';
+  const retryBtn = b.status === 'error' ? `<button class="btn-retry" onclick="event.stopPropagation();retryBuild('${b.id}')">🔄 Tentar novamente</button>` : '';
+  const resumeBtn = (b.status === 'running' || b.status === 'starting') ? `<button class="btn-retry" onclick="event.stopPropagation();resumeBuild('${b.id}')">👁️ Ver progresso</button>` : '';
+  const actions = `<div class="build-item-actions">
+    ${dlBtn}${retryBtn}${resumeBtn}
+    <button class="btn-del" onclick="event.stopPropagation();deleteBuild('${b.id}')">🗑️ Excluir</button>
+  </div>`;
+  return `<div class="build-item">
     <div class="build-item-header">
       <span class="build-item-name">${b.appName || 'Build'} · ${b.buildType?.toUpperCase()}</span>
       <span class="build-item-badge ${badge}">${label}</span>
     </div>
     <div class="build-item-meta">${b.pkg || ''} · ${ago}</div>
     ${warn}
+    ${actions}
   </div>`;
+}
+
+function deleteBuild(id) {
+  if (!confirm('Excluir este build do histórico?')) return;
+  let builds = getBuilds();
+  builds = builds.filter(b => b.id !== id);
+  saveBuilds(builds);
+  renderDashboard();
+  showToast('🗑️ Build removido');
+}
+
+function retryBuild(id) {
+  const builds = getBuilds();
+  const b = builds.find(x => x.id === id);
+  if (!b) return;
+  // Remover do histórico para evitar conflito
+  deleteBuildSilent(id);
+  // Abrir tela de build com dados preenchidos
+  startNewBuild();
+  setTimeout(() => {
+    if (b.appName) { document.getElementById('app-name').value = b.appName; autoFillPackage(b.appName); }
+    if (b.buildType) selectBuild(b.buildType);
+    showToast('♻️ Preencha o projeto e clique em Iniciar Build');
+  }, 500);
+}
+
+function deleteBuildSilent(id) {
+  let builds = getBuilds();
+  builds = builds.filter(b => b.id !== id);
+  saveBuilds(builds);
+}
+
+function deleteBuild(id) {
+  if (!confirm('Excluir este build do histórico?')) return;
+  let builds = getBuilds();
+  builds = builds.filter(b => b.id !== id);
+  saveBuilds(builds);
+  renderDashboard();
+  showToast('🗑️ Build removido');
+}
+
+function retryBuild(id) {
+  const builds = getBuilds();
+  const b = builds.find(x => x.id === id);
+  // Remover silenciosamente para evitar conflito
+  let arr = getBuilds().filter(x => x.id !== id);
+  saveBuilds(arr);
+  startNewBuild();
+  setTimeout(() => {
+    if (b?.appName) { document.getElementById('app-name').value = b.appName; autoFillPackage(b.appName); }
+    if (b?.buildType) selectBuild(b.buildType);
+    showToast('♻️ Preencha o projeto e clique em Iniciar Build');
+  }, 500);
 }
 
 function openBuildUrl(url) {
@@ -936,7 +1005,6 @@ async function startBuild() {
       buildType: state.buildType, status: 'running', startTime: Date.now(), buildUrl: null
     });
 
-    startCountdown(600); // 10 min estimativa
     startStatusMessages();
     startPolling(backendUrl, data.jobId, name, pkg);
 
@@ -947,22 +1015,7 @@ async function startBuild() {
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// COUNTDOWN
-// ═══════════════════════════════════════════════════════
-function startCountdown(seconds) {
-  let remaining = seconds;
-  if (state.countdownTimer) clearInterval(state.countdownTimer);
-  const update = () => {
-    if (remaining <= 0) { clearInterval(state.countdownTimer); document.getElementById('countdown').textContent = '✅'; return; }
-    const m = Math.floor(remaining / 60);
-    const s = remaining % 60;
-    document.getElementById('countdown').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-    remaining--;
-  };
-  update();
-  state.countdownTimer = setInterval(update, 1000);
-}
+
 
 // ═══════════════════════════════════════════════════════
 // STATUS MESSAGES
@@ -991,7 +1044,10 @@ function startStatusMessages() {
 
 function updateStatusBar(msg, stepName) {
   const bar = document.getElementById('build-status-bar');
-  if (bar) bar.textContent = stepName ? `[${stepName}] ${msg}` : msg;
+  const eta = document.getElementById('prog-eta');
+  const text = stepName ? `[${stepName}] ${msg}` : msg;
+  if (bar) bar.textContent = text;
+  if (eta) eta.textContent = stepName || msg.substring(0, 50);
 }
 
 function stopStatusMessages(msg) {
@@ -999,7 +1055,8 @@ function stopStatusMessages(msg) {
   if (state.countdownTimer) { clearInterval(state.countdownTimer); state.countdownTimer = null; }
   const bar = document.getElementById('build-status-bar');
   if (bar) bar.textContent = msg || '✅ Build concluído!';
-  document.getElementById('countdown').textContent = '✅';
+  const eta = document.getElementById('prog-eta');
+  if (eta) eta.textContent = msg || 'Concluído!';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1151,6 +1208,23 @@ function closeModal() {
   document.getElementById('download-modal').style.display = 'none';
 }
 
+function cancelBuild() {
+  if (!confirm('Cancelar este build?')) return;
+  if (state.pollInterval) clearInterval(state.pollInterval);
+  if (state.msgTimer) clearInterval(state.msgTimer);
+  if (state.countdownTimer) clearInterval(state.countdownTimer);
+  // Marcar como cancelado no histórico
+  if (state.jobId) {
+    const builds = getBuilds();
+    const b = builds.find(x => x.id === state.jobId);
+    if (b) { b.status = 'error'; b.error = 'Cancelado pelo usuário'; saveBuild(b); }
+  }
+  showToast('🚫 Build cancelado');
+  showCard(1); updateSteps(1);
+  document.getElementById('app-main').style.display = 'none';
+  showDashboard();
+}
+
 function resetApp() {
   if (state.pollInterval) clearInterval(state.pollInterval);
   if (state.countdownTimer) clearInterval(state.countdownTimer);
@@ -1164,8 +1238,8 @@ function resetApp() {
   document.getElementById('ks-file-name').textContent = '';
   document.getElementById('log-box').textContent = '';
   document.getElementById('prog-bar').style.width = '0%';
-  document.getElementById('countdown').textContent = '--:--';
   document.getElementById('build-status-bar').textContent = '⏳ Preparando build...';
+  document.getElementById('prog-eta').textContent = 'Aguardando...';
   ['ps-1','ps-2','ps-3','ps-4','ps-5'].forEach(id => document.getElementById(id).classList.remove('running','done','error'));
   state.zipFile = null; state.ksFile = null; state.buildUrl = null; state.jobId = null;
   selectSource('github'); selectBuild('apk');
