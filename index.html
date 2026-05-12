@@ -364,6 +364,15 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <input type="password" class="input" id="login-pass" placeholder="••••••••" autocomplete="current-password" />
     </div>
     <button class="btn btn-primary" onclick="doLogin()">Entrar →</button>
+    <div style="display:flex;align-items:center;gap:10px;margin:16px 0 4px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <span style="font-size:11px;color:var(--text2);font-family:'Space Mono',monospace">ou</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+    <button class="btn btn-secondary" onclick="entrarComoVisitante()" style="border-color:var(--accent2);color:var(--accent2);margin-bottom:12px">
+      👤 Entrar como Visitante
+    </button>
+    <div class="token-note" style="margin-top:4px;font-size:10px">⚠️ Modo temporário — histórico não é salvo</div>
     <div class="token-note" style="margin-top:12px">Plataforma by <span style="color:var(--accent2)">Grupo DIGGO</span></div>
   </div>
 </div>
@@ -374,6 +383,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <div class="dash-logo">⚡ BuildSpeed</div>
     <div style="display:flex;align-items:center;gap:10px">
       <span class="dash-user" id="dash-username"></span>
+      <span id="guest-badge" style="display:none;font-size:10px;background:rgba(251,191,36,0.15);color:#fcd34d;border:1px solid rgba(251,191,36,0.3);padding:2px 8px;border-radius:20px;font-family:'Space Mono',monospace">VISITANTE</span>
       <button class="dash-logout" onclick="doLogout()">Sair</button>
     </div>
   </div>
@@ -583,7 +593,7 @@ const state = {
   source: 'github', buildType: 'apk',
   zipFile: null, ksFile: null, buildUrl: null,
   jobId: null, pollInterval: null, logVisible: false,
-  currentUser: null, countdownTimer: null, msgTimer: null,
+  currentUser: null, isGuest: false, countdownTimer: null, msgTimer: null,
   buildStartTime: null
 };
 
@@ -606,9 +616,17 @@ function doLogin() {
   showDashboard();
 }
 
+function entrarComoVisitante() {
+  state.currentUser = 'visitante';
+  state.isGuest = true;
+  // Não salva sessão no localStorage
+  showDashboard();
+}
+
 function doLogout() {
   localStorage.removeItem('bs-session');
   state.currentUser = null;
+  state.isGuest = false;
   document.getElementById('dashboard-screen').style.display = 'none';
   document.getElementById('app-main').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
@@ -630,6 +648,19 @@ function showDashboard() {
 }
 
 function renderDashboard() {
+  // Mostrar badge visitante
+  const badge = document.getElementById('guest-badge');
+  if (badge) badge.style.display = state.isGuest ? 'inline' : 'none';
+  // Aviso visitante no topo
+  const dashContent = document.querySelector('.dash-content');
+  const existingWarn = document.getElementById('guest-warn');
+  if (state.isGuest && dashContent && !existingWarn) {
+    const warn = document.createElement('div');
+    warn.id = 'guest-warn';
+    warn.style.cssText = 'background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.25);border-radius:10px;padding:10px 14px;font-size:11px;color:#fcd34d;font-family:Space Mono,monospace;line-height:1.6;margin-bottom:12px';
+    warn.textContent = '⚠️ Modo visitante — seu histórico não será salvo entre sessões. Crie uma conta para manter seu histórico.';
+    dashContent.insertBefore(warn, dashContent.firstChild);
+  }
   const builds = getBuilds();
   const running = builds.filter(b => b.status === 'running' || b.status === 'starting');
   const history = builds.filter(b => b.status !== 'running' && b.status !== 'starting');
