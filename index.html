@@ -713,6 +713,26 @@ function buildCard(b) {
   </div>`;
 }
 
+function copyLog(id) {
+  const builds = getBuilds();
+  const b = builds.find(x => x.id === id);
+  if (!b || !b.log) { showToast('⚠️ Log não disponível'); return; }
+  navigator.clipboard.writeText(b.log).then(() => {
+    showToast('📋 Log copiado!');
+  }).catch(() => {
+    // Fallback para dispositivos sem clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = b.log;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('📋 Log copiado!');
+  });
+}
+
 function deleteBuild(id) {
   if (!confirm('Excluir este build do histórico?')) return;
   let builds = getBuilds();
@@ -741,6 +761,26 @@ function deleteBuildSilent(id) {
   let builds = getBuilds();
   builds = builds.filter(b => b.id !== id);
   saveBuilds(builds);
+}
+
+function copyLog(id) {
+  const builds = getBuilds();
+  const b = builds.find(x => x.id === id);
+  if (!b || !b.log) { showToast('⚠️ Log não disponível'); return; }
+  navigator.clipboard.writeText(b.log).then(() => {
+    showToast('📋 Log copiado!');
+  }).catch(() => {
+    // Fallback para dispositivos sem clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = b.log;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('📋 Log copiado!');
+  });
 }
 
 function deleteBuild(id) {
@@ -1154,7 +1194,8 @@ function processJobUpdate(job, appName, appPkg, stepMap, barMap, evtSource) {
     // Atualizar histórico
     saveBuild({
       id: state.jobId, appName, pkg: appPkg, buildType: state.buildType,
-      status: 'done', startTime: state.buildStartTime, buildUrl: job.buildUrl
+      status: 'done', startTime: state.buildStartTime, buildUrl: job.buildUrl,
+      log: job.log || ''
     });
     showResult(appName);
   }
@@ -1168,7 +1209,8 @@ function processJobUpdate(job, appName, appPkg, stepMap, barMap, evtSource) {
     showToast('❌ ' + (job.error || 'Erro'));
     saveBuild({
       id: state.jobId, appName, pkg: appPkg, buildType: state.buildType,
-      status: 'error', startTime: state.buildStartTime, buildUrl: null
+      status: 'error', startTime: state.buildStartTime, buildUrl: null,
+      log: job.log || ''
     });
   }
 }
