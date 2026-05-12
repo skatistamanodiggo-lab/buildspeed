@@ -585,6 +585,23 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 
 <div class="toast" id="toast"></div>
 
+<!-- Modal Log -->
+<div class="modal-overlay" id="log-modal" style="display:none" onclick="if(event.target===this)closeLogModal()">
+  <div class="modal-box" style="max-width:460px;text-align:left">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-size:16px;font-weight:800">📋 Log do Build</div>
+      <button onclick="closeLogModal()" style="background:transparent;border:none;color:var(--text2);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:11px;color:var(--text2);font-family:'Space Mono',monospace;margin-bottom:8px">Selecione todo o texto abaixo e copie manualmente:</div>
+    <textarea id="log-modal-text" readonly
+      style="width:100%;height:240px;background:#0d0d14;border:1px solid var(--border);border-radius:10px;padding:12px;font-family:'Space Mono',monospace;font-size:11px;color:#88cc88;resize:none;outline:none;line-height:1.5"
+      onclick="this.select()"></textarea>
+    <button onclick="selectAllLog()" class="btn btn-primary" style="margin-top:10px;padding:12px;font-size:14px">
+      Selecionar tudo
+    </button>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════
 // USUÁRIOS (senha simples — troque conforme necessário)
@@ -603,7 +620,7 @@ const state = {
   zipFile: null, ksFile: null, buildUrl: null,
   jobId: null, pollInterval: null, logVisible: false,
   currentUser: null, isGuest: false, countdownTimer: null, msgTimer: null,
-  buildStartTime: null
+  buildStartTime: null, currentLog: ''
 };
 
 const BACKEND_URL = 'https://buildspeed-backend-production.up.railway.app';
@@ -695,42 +712,57 @@ function buildCard(b) {
   const badge = b.status === 'done' ? 'badge-done' : b.status === 'error' ? 'badge-error' : 'badge-running';
   const label = b.status === 'done' ? 'CONCLUÍDO' : b.status === 'error' ? 'FALHOU' : 'EM ANDAMENTO';
   const warn = b.status === 'done' && b.buildUrl ? '<div class="build-item-warn">⚠️ Link disponível por tempo limitado na Expo</div>' : '';
-  const dlBtn = b.buildUrl && b.status === 'done' ? `<button class="btn-retry" onclick="event.stopPropagation();openBuildUrl('${b.buildUrl}')">⬇️ Baixar</button>` : '';
-  const retryBtn = b.status === 'error' ? `<button class="btn-retry" onclick="event.stopPropagation();retryBuild('${b.id}')">🔄 Tentar novamente</button>` : '';
-  const resumeBtn = (b.status === 'running' || b.status === 'starting') ? `<button class="btn-retry" onclick="event.stopPropagation();resumeBuild('${b.id}')">👁️ Ver progresso</button>` : '';
-  const actions = `<div class="build-item-actions">
-    ${dlBtn}${retryBtn}${resumeBtn}
-    <button class="btn-del" onclick="event.stopPropagation();deleteBuild('${b.id}')">🗑️ Excluir</button>
-  </div>`;
+  const dlBtn = b.buildUrl && b.status === 'done'
+    ? `<button class="btn-retry" onclick="event.stopPropagation();openBuildUrl('${b.buildUrl}')">⬇️ Baixar</button>` : '';
+  const retryBtn = b.status === 'error'
+    ? `<button class="btn-retry" onclick="event.stopPropagation();retryBuild('${b.id}')">🔄 Retry</button>` : '';
+  const resumeBtn = (b.status === 'running' || b.status === 'starting')
+    ? `<button class="btn-retry" onclick="event.stopPropagation();resumeBuild('${b.id}')">👁️ Ver</button>` : '';
+  const copyBtn = `<button class="btn-retry" onclick="event.stopPropagation();copyLog('${b.id}')">📋 Log</button>`;
+  const delBtn = `<button class="btn-del" onclick="event.stopPropagation();deleteBuild('${b.id}')">🗑️</button>`;
+  const actions = `<div class="build-item-actions">${dlBtn}${retryBtn}${resumeBtn}${copyBtn}${delBtn}</div>`;
   return `<div class="build-item">
     <div class="build-item-header">
       <span class="build-item-name">${b.appName || 'Build'} · ${b.buildType?.toUpperCase()}</span>
       <span class="build-item-badge ${badge}">${label}</span>
     </div>
     <div class="build-item-meta">${b.pkg || ''} · ${ago}</div>
-    ${warn}
-    ${actions}
+    ${warn}${actions}
   </div>`;
 }
-
 function copyLog(id) {
   const builds = getBuilds();
   const b = builds.find(x => x.id === id);
-  if (!b || !b.log) { showToast('⚠️ Log não disponível'); return; }
-  navigator.clipboard.writeText(b.log).then(() => {
-    showToast('📋 Log copiado!');
-  }).catch(() => {
-    // Fallback para dispositivos sem clipboard API
-    const ta = document.createElement('textarea');
-    ta.value = b.log;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
+  const logText = b?.log || 'Log não disponível para este build.';
+  // Limitar a 30KB para não travar
+  const limited = logText.length > 30000 ? logText.slice(-30000) : logText;
+  document.getElementById('log-modal-text').value = limited;
+  document.getElementById('log-modal').style.display = 'flex';
+  setTimeout(() => {
+    const ta = document.getElementById('log-modal-text');
+    ta.focus();
     ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast('📋 Log copiado!');
-  });
+  }, 100);
+}
+
+function closeLogModal() {
+  document.getElementById('log-modal').style.display = 'none';
+}
+
+function selectAllLog() {
+  const ta = document.getElementById('log-modal-text');
+  ta.focus();
+  ta.select();
+  // Tentar clipboard API
+  try {
+    navigator.clipboard.writeText(ta.value).then(() => {
+      showToast('✅ Copiado!');
+    }).catch(() => {
+      showToast('✅ Texto selecionado — copie com Ctrl+C ou segure e toque Copiar');
+    });
+  } catch(e) {
+    showToast('✅ Texto selecionado — copie com Ctrl+C ou segure e toque Copiar');
+  }
 }
 
 function deleteBuild(id) {
@@ -766,21 +798,36 @@ function deleteBuildSilent(id) {
 function copyLog(id) {
   const builds = getBuilds();
   const b = builds.find(x => x.id === id);
-  if (!b || !b.log) { showToast('⚠️ Log não disponível'); return; }
-  navigator.clipboard.writeText(b.log).then(() => {
-    showToast('📋 Log copiado!');
-  }).catch(() => {
-    // Fallback para dispositivos sem clipboard API
-    const ta = document.createElement('textarea');
-    ta.value = b.log;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
+  const logText = b?.log || 'Log não disponível para este build.';
+  // Limitar a 30KB para não travar
+  const limited = logText.length > 30000 ? logText.slice(-30000) : logText;
+  document.getElementById('log-modal-text').value = limited;
+  document.getElementById('log-modal').style.display = 'flex';
+  setTimeout(() => {
+    const ta = document.getElementById('log-modal-text');
+    ta.focus();
     ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    showToast('📋 Log copiado!');
-  });
+  }, 100);
+}
+
+function closeLogModal() {
+  document.getElementById('log-modal').style.display = 'none';
+}
+
+function selectAllLog() {
+  const ta = document.getElementById('log-modal-text');
+  ta.focus();
+  ta.select();
+  // Tentar clipboard API
+  try {
+    navigator.clipboard.writeText(ta.value).then(() => {
+      showToast('✅ Copiado!');
+    }).catch(() => {
+      showToast('✅ Texto selecionado — copie com Ctrl+C ou segure e toque Copiar');
+    });
+  } catch(e) {
+    showToast('✅ Texto selecionado — copie com Ctrl+C ou segure e toque Copiar');
+  }
 }
 
 function deleteBuild(id) {
@@ -1156,8 +1203,15 @@ function fallbackPoll(backendUrl, jobId, appName, appPkg, stepMap, barMap) {
 function processJobUpdate(job, appName, appPkg, stepMap, barMap, evtSource) {
   // Log
   if (job.log) {
+    state.currentLog = job.log;
     const lb = document.getElementById('log-box');
-    if (lb) { lb.textContent = job.log; lb.scrollTop = lb.scrollHeight; }
+    if (lb) {
+      // Limitar exibição a últimas 200 linhas para não travar browser
+      const lines = job.log.split('\n');
+      const display = lines.length > 200 ? '...\n' + lines.slice(-200).join('\n') : job.log;
+      lb.textContent = display;
+      lb.scrollTop = lb.scrollHeight;
+    }
   }
 
   // Steps
@@ -1195,7 +1249,7 @@ function processJobUpdate(job, appName, appPkg, stepMap, barMap, evtSource) {
     saveBuild({
       id: state.jobId, appName, pkg: appPkg, buildType: state.buildType,
       status: 'done', startTime: state.buildStartTime, buildUrl: job.buildUrl,
-      log: job.log || ''
+      log: job.log || state.currentLog || 'Log não disponível'
     });
     showResult(appName);
   }
@@ -1210,7 +1264,7 @@ function processJobUpdate(job, appName, appPkg, stepMap, barMap, evtSource) {
     saveBuild({
       id: state.jobId, appName, pkg: appPkg, buildType: state.buildType,
       status: 'error', startTime: state.buildStartTime, buildUrl: null,
-      log: job.log || ''
+      log: job.log || state.currentLog || 'Log não disponível'
     });
   }
 }
@@ -1258,7 +1312,7 @@ function cancelBuild() {
   if (state.jobId) {
     const builds = getBuilds();
     const b = builds.find(x => x.id === state.jobId);
-    if (b) { b.status = 'error'; b.error = 'Cancelado pelo usuário'; saveBuild(b); }
+    if (b) { b.status = 'error'; b.error = 'Cancelado pelo usuário'; b.log = state.currentLog || b.log || ''; saveBuild(b); }
   }
   showToast('🚫 Build cancelado');
   showCard(1); updateSteps(1);
@@ -1282,7 +1336,7 @@ function resetApp() {
   document.getElementById('build-status-bar').textContent = '⏳ Preparando build...';
   document.getElementById('prog-eta').textContent = 'Aguardando...';
   ['ps-1','ps-2','ps-3','ps-4','ps-5'].forEach(id => document.getElementById(id).classList.remove('running','done','error'));
-  state.zipFile = null; state.ksFile = null; state.buildUrl = null; state.jobId = null;
+  state.zipFile = null; state.ksFile = null; state.buildUrl = null; state.jobId = null; state.currentLog = '';
   selectSource('github'); selectBuild('apk');
   showCard(1); updateSteps(1);
   // Voltar ao dashboard
