@@ -561,6 +561,9 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <button class="btn-ai-fix" onclick="openAiPrompt()">🤖 Corrigir com IA — Ver prompt</button>
       <button class="btn-modal-close" onclick="document.getElementById('diagnosis-card').classList.remove('active')">Fechar</button>
     </div>
+    <div id="error-ai-btn" style="display:none;margin-bottom:8px">
+      <button class="btn-ai-fix" onclick="openAiPrompt()">🤖 PROMPT para Corrigir seu app com I.A.</button>
+    </div>
     <div class="log-toggle" onclick="toggleLog()">▼ ver logs em tempo real</div>
     <div class="log-box" id="log-box"></div>
   </div>
@@ -787,7 +790,8 @@ function buildCard(b) {
     ? `<button class="btn-retry" onclick="event.stopPropagation();resumeBuild('${b.id}')">👁️ Ver</button>` : '';
   const copyBtn = `<button class="btn-retry" onclick="event.stopPropagation();copyLog('${b.id}')">📋 Log</button>`;
   const delBtn = `<button class="btn-del" onclick="event.stopPropagation();deleteBuild('${b.id}')">🗑️</button>`;
-  const actions = `<div class="build-item-actions">${dlBtn}${retryBtn}${resumeBtn}${copyBtn}${delBtn}</div>`;
+  const aiBtn = b.status === 'error' ? `<button class="btn-retry" style="background:rgba(124,58,237,0.15);border-color:rgba(124,58,237,0.4);color:#a78bfa" onclick="event.stopPropagation();openAiPrompt()">🤖 Prompt IA</button>` : '';
+  const actions = `<div class="build-item-actions">${dlBtn}${retryBtn}${resumeBtn}${aiBtn}${copyBtn}${delBtn}</div>`;
   return `<div class="build-item">
     <div class="build-item-header">
       <span class="build-item-name">${b.appName || 'Build'} · ${b.buildType?.toUpperCase()}</span>
@@ -1423,6 +1427,8 @@ function resetApp() {
   document.getElementById('prog-eta').textContent = 'Aguardando...';
   ['ps-1','ps-2','ps-3','ps-4','ps-5'].forEach(id => document.getElementById(id).classList.remove('running','done','error'));
   state.zipFile = null; state.ksFile = null; state.buildUrl = null; state.jobId = null; state.currentLog = '';
+  const aiBtn = document.getElementById('error-ai-btn');
+  if (aiBtn) aiBtn.style.display = 'none';
   selectSource('github'); selectBuild('apk');
   showCard(1); updateSteps(1);
   // Voltar ao dashboard
@@ -1539,6 +1545,9 @@ let lastBuildParams = null;
 
 function showDiagnosis(diagnosis) {
   currentDiagnosis = diagnosis;
+  // Mostrar botão IA standalone sempre que houver erro
+  const aiBtn = document.getElementById('error-ai-btn');
+  if (aiBtn) aiBtn.style.display = 'block';
   const card = document.getElementById('diagnosis-card');
   document.getElementById('diagnosis-title').textContent = diagnosis.title || '❌ Erro';
   document.getElementById('diagnosis-msg').textContent = diagnosis.message || '';
