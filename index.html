@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expo Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c26;
+    --border: #2a2a3a;
+    --accent: #7c3aed;
+    --accent2: #06d6a0;
+    --accent3: #f72585;
+    --text: #e8e8f0;
+    --text2: #888899;
+    --success: #06d6a0;
+    --error: #f72585;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(124,58,237,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.04) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+  .container { max-width: 480px; margin: 0 auto; padding: 24px 16px 80px; position: relative; z-index: 1; }
+  .header { text-align: center; padding: 32px 0 40px; }
+  .logo { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .logo-icon { width: 44px; height: 44px; background: linear-gradient(135deg, var(--accent), var(--accent3)); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .logo-text { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo-text span { color: var(--accent2); }
+  .tagline { color: var(--text2); font-size: 14px; font-family: 'Space Mono', monospace; }
+  .steps { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 32px; }
+  .step { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .step-dot { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; font-family: 'Space Mono', monospace; transition: all 0.3s; color: var(--text2); }
+  .step.active .step-dot { border-color: var(--accent); background: var(--accent); color: white; box-shadow: 0 0 16px rgba(124,58,237,0.5); }
+  .step.done .step-dot { border-color: var(--accent2); background: var(--accent2); color: var(--bg); }
+  .step-label { font-size: 10px; color: var(--text2); font-family: 'Space Mono', monospace; white-space: nowrap; }
+  .step.active .step-label { color: var(--accent); }
+  .step.done .step-label { color: var(--accent2); }
+  .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 4px; margin-bottom: 22px; max-width: 40px; transition: background 0.3s; }
+  .step-line.done { background: var(--accent2); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; display: none; animation: fadeUp 0.4s ease; }
+  .card.active { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .card-title { font-size: 18px; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .card-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; font-family: 'Space Mono', monospace; line-height: 1.6; }
+  .toggle-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+  .toggle-btn { padding: 12px; border: 2px solid var(--border); background: var(--surface2); border-radius: 12px; color: var(--text2); font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .toggle-btn .icon { font-size: 22px; }
+  .toggle-btn.selected { border-color: var(--accent); background: rgba(124,58,237,0.15); color: var(--text); }
+  .input-group { margin-bottom: 16px; }
+  .input-label { font-size: 12px; font-family: 'Space Mono', monospace; color: var(--text2); margin-bottom: 8px; display: block; }
+  .input { width: 100%; padding: 14px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-family: 'Space Mono', monospace; font-size: 13px; outline: none; transition: border-color 0.2s; }
+  .input:focus { border-color: var(--accent); }
+  .input::placeholder { color: var(--text2); }
+  .upload-area { border: 2px dashed var(--border); border-radius: 12px; padding: 32px 16px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface2); }
+  .upload-area:hover { border-color: var(--accent); background: rgba(124,58,237,0.08); }
+  .upload-icon { font-size: 36px; margin-bottom: 10px; }
+  .upload-text { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .upload-sub { font-size: 12px; color: var(--text2); font-family: 'Space Mono', monospace; }
+  .upload-file-name { margin-top: 10px; font-size: 12px; color: var(--accent2); font-family: 'Space Mono', monospace; }
+  .build-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .build-option { border: 2px solid var(--border); background: var(--surface2); border-radius: 14px; padding: 16px 12px; cursor: pointer; transition: all 0.2s; text-align: center; }
+  .build-option .icon { font-size: 28px; margin-bottom: 8px; }
+  .build-option .title { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+  .build-option .desc { font-size: 11px; color: var(--text2); font-family: 'Space Mono', monospace; line-height: 1.5; }
+  .build-option .tag { display: inline-block; margin-top: 8px; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-family: 'Space Mono', monospace; font-weight: 700; }
+  .build-option.apk .tag { background: rgba(6,214,160,0.15); color: var(--accent2); }
+  .build-option.aab .tag { background: rgba(124,58,237,0.15); color: #a78bfa; }
+  .build-option.selected.apk { border-color: var(--accent2); background: rgba(6,214,160,0.08); }
+  .build-option.selected.aab { border-color: var(--accent); background: rgba(124,58,237,0.1); }
+  .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), #9333ea); color: white; box-shadow: 0 4px 20px rgba(124,58,237,0.4); }
+  .btn-primary:hover { transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text2); font-size: 14px; padding: 12px; }
+  .config-section { background: var(--surface2); border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
+  .config-section-title { font-size: 12px; font-family: 'Space Mono', monospace; color: var(--text2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .info-box { background: rgba(124,58,237,0.08); border: 1px solid rgba(124,58,237,0.2); border-radius: 10px; padding: 12px 14px; font-size: 12px; color: #c4b5fd; font-family: 'Space Mono', monospace; line-height: 1.6; margin-bottom: 16px; }
+  .info-box.warning { background: rgba(251,191,36,0.08); border-color: rgba(251,191,36,0.2); color: #fcd34d; }
+  .collapsible-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; padding: 4px 0; margin-bottom: 4px; }
+  .collapsible-arrow { transition: transform 0.2s; font-size: 12px; }
+  .collapsible-header.open .collapsible-arrow { transform: rotate(180deg); }
+  .collapsible-body { display: none; }
+  .collapsible-body.open { display: block; }
+  .token-note { font-size: 11px; color: var(--text2); font-family: 'Space Mono', monospace; margin-top: 6px; line-height: 1.5; }
+  .token-note a { color: var(--accent); text-decoration: none; }
+
+  /* Progress */
+  .progress-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 24px 20px; display: none; animation: fadeUp 0.4s ease; }
+  .progress-card.active { display: block; }
+  .progress-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+  .progress-sub { font-size: 12px; color: var(--text2); font-family: 'Space Mono', monospace; margin-bottom: 24px; }
+  .progress-steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .prog-step { display: flex; align-items: flex-start; gap: 12px; padding: 12px; border-radius: 10px; background: var(--surface2); border: 1px solid transparent; transition: all 0.3s; }
+  .prog-step.running { border-color: rgba(124,58,237,0.3); background: rgba(124,58,237,0.05); }
+  .prog-step.done { border-color: rgba(6,214,160,0.2); background: rgba(6,214,160,0.04); }
+  .prog-step.error { border-color: rgba(247,37,133,0.3); background: rgba(247,37,133,0.05); }
+  .prog-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; background: var(--border); }
+  .prog-step.running .prog-icon { background: rgba(124,58,237,0.2); animation: pulse 1.5s infinite; }
+  .prog-step.done .prog-icon { background: rgba(6,214,160,0.2); }
+  .prog-step.error .prog-icon { background: rgba(247,37,133,0.2); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  .prog-info { flex: 1; min-width: 0; }
+  .prog-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .prog-detail { font-size: 11px; color: var(--text2); font-family: 'Space Mono', monospace; word-break: break-all; }
+  .prog-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .prog-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 2px; width: 0%; transition: width 0.5s ease; }
+  .prog-eta { text-align: center; margin-top: 10px; font-size: 12px; color: var(--text2); font-family: 'Space Mono', monospace; }
+  .log-box { background: #0d0d14; border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-family: 'Space Mono', monospace; font-size: 11px; color: #88cc88; max-height: 180px; overflow-y: auto; margin-top: 16px; white-space: pre-wrap; word-break: break-all; }
+  .log-toggle { font-size: 12px; color: var(--text2); font-family: 'Space Mono', monospace; cursor: pointer; text-align: center; margin-top: 10px; }
+
+  /* Result */
+  .result-card { background: var(--surface); border: 1px solid rgba(6,214,160,0.3); border-radius: 16px; padding: 24px 20px; display: none; animation: fadeUp 0.4s ease; text-align: center; }
+  .result-card.active { display: block; }
+  .result-icon { font-size: 48px; margin-bottom: 12px; animation: bounce 0.6s ease; }
+  @keyframes bounce { 0%{transform:scale(0)} 60%{transform:scale(1.2)} 100%{transform:scale(1)} }
+  .result-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+  .result-sub { font-size: 13px; color: var(--text2); font-family: 'Space Mono', monospace; margin-bottom: 24px; }
+  .result-info { background: var(--surface2); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; text-align: left; }
+  .result-info-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .result-info-row:last-child { border-bottom: none; }
+  .result-info-label { color: var(--text2); font-family: 'Space Mono', monospace; font-size: 11px; }
+  .result-info-val { font-weight: 600; font-size: 12px; font-family: 'Space Mono', monospace; color: var(--accent2); }
+  .btn-download { background: linear-gradient(135deg, var(--accent2), #059669); color: var(--bg); font-weight: 800; box-shadow: 0 4px 20px rgba(6,214,160,0.3); margin-bottom: 10px; }
+  .btn-new { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+
+  /* Backend URL config */
+  .backend-bar { background: var(--surface2); border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; align-items: center; gap: 8px; font-size: 12px; font-family: 'Space Mono', monospace; position: sticky; top: 0; z-index: 10; }
+  .backend-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+  .backend-dot.online { background: var(--accent2); box-shadow: 0 0 6px var(--accent2); }
+  .backend-dot.offline { background: var(--error); }
+  .backend-url-input { flex: 1; background: transparent; border: none; color: var(--text2); font-family: 'Space Mono', monospace; font-size: 12px; outline: none; min-width: 0; }
+  .backend-check-btn { background: transparent; border: 1px solid var(--border); color: var(--text2); padding: 4px 10px; border-radius: 6px; font-size: 11px; font-family: 'Space Mono', monospace; cursor: pointer; white-space: nowrap; }
+
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 20px; font-size: 13px; font-family: 'Space Mono', monospace; z-index: 100; transition: transform 0.3s; white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- Backend status bar -->
+<div class="backend-bar">
+  <div class="backend-dot" id="backend-dot"></div>
+  <input class="backend-url-input" id="backend-url" placeholder="https://seu-backend.railway.app" />
+  <button class="backend-check-btn" onclick="checkBackend()">Testar</button>
+</div>
+
+<div class="container">
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon">⚡</div>
+      <div class="logo-text">Expo<span>Builder</span></div>
+    </div>
+    <div class="tagline">// build sem computador · direto do celular</div>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps">
+    <div class="step active" id="s1"><div class="step-dot">1</div><div class="step-label">Projeto</div></div>
+    <div class="step-line" id="line1"></div>
+    <div class="step" id="s2"><div class="step-dot">2</div><div class="step-label">Config</div></div>
+    <div class="step-line" id="line2"></div>
+    <div class="step" id="s3"><div class="step-dot">3</div><div class="step-label">Build</div></div>
+    <div class="step-line" id="line3"></div>
+    <div class="step" id="s4"><div class="step-dot">4</div><div class="step-label">Baixar</div></div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="card active" id="card1">
+    <div class="card-title">📦 Seu projeto</div>
+    <div class="card-sub">Cole o link do GitHub ou envie o arquivo ZIP do projeto Expo.</div>
+    <div class="toggle-group">
+      <button class="toggle-btn selected" id="btn-github" onclick="selectSource('github')"><span class="icon">🔗</span>Link GitHub</button>
+      <button class="toggle-btn" id="btn-zip" onclick="selectSource('zip')"><span class="icon">📁</span>Upload ZIP</button>
+    </div>
+    <div id="github-input">
+      <div class="input-group">
+        <label class="input-label">URL do repositório</label>
+        <input type="url" class="input" id="github-url" placeholder="https://github.com/usuario/meu-app" />
+      </div>
+      <div class="input-group">
+        <label class="input-label">Token GitHub (repositório privado)</label>
+        <input type="password" class="input" id="github-token" placeholder="ghp_... (opcional)" />
+        <div class="token-note">Gere em: <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> → marque "repo"</div>
+      </div>
+    </div>
+    <div id="zip-input-area" style="display:none">
+      <div class="upload-area" onclick="document.getElementById('zip-input').click()">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">Toque para selecionar o ZIP</div>
+        <div class="upload-sub">Arquivo .zip do projeto Expo</div>
+        <div class="upload-file-name" id="upload-file-name"></div>
+      </div>
+      <input type="file" id="zip-input" accept=".zip" style="display:none" onchange="handleZipSelect(this)">
+    </div>
+    <br>
+    <button class="btn btn-primary" onclick="goToStep2()">Continuar →</button>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card" id="card2">
+    <div class="card-title">⚙️ Configuração</div>
+    <div class="card-sub">Preencha os dados do app e escolha o tipo de build.</div>
+    <div class="build-options">
+      <div class="build-option apk selected" id="opt-apk" onclick="selectBuild('apk')">
+        <div class="icon">📱</div><div class="title">APK</div>
+        <div class="desc">Instala direto no celular.</div>
+        <div class="tag">TESTE</div>
+      </div>
+      <div class="build-option aab" id="opt-aab" onclick="selectBuild('aab')">
+        <div class="icon">🏪</div><div class="title">AAB</div>
+        <div class="desc">Para a Google Play Store.</div>
+        <div class="tag">PLAY STORE</div>
+      </div>
+    </div>
+    <div class="config-section">
+      <div class="config-section-title">📋 Dados do App</div>
+      <div class="input-group"><label class="input-label">Nome do app</label><input type="text" class="input" id="app-name" placeholder="Meu App" /></div>
+      <div class="input-group"><label class="input-label">Package name</label><input type="text" class="input" id="app-package" placeholder="com.empresa.meuapp" /></div>
+      <div class="row-2">
+        <div class="input-group"><label class="input-label">Versão</label><input type="text" class="input" id="app-version" placeholder="1.0.0" /></div>
+        <div class="input-group"><label class="input-label">Version Code</label><input type="number" class="input" id="app-version-code" placeholder="1" /></div>
+      </div>
+    </div>
+    <div class="config-section">
+      <div class="config-section-title">🔑 Conta Expo</div>
+      <div class="input-group"><label class="input-label">Email</label><input type="email" class="input" id="expo-email" placeholder="seu@email.com" /></div>
+      <div class="input-group"><label class="input-label">Senha</label><input type="password" class="input" id="expo-password" placeholder="••••••••" /></div>
+      <div class="token-note">Crie conta grátis em: <a href="https://expo.dev" target="_blank">expo.dev</a></div>
+    </div>
+    <div id="keystore-section" style="display:none">
+      <div class="config-section">
+        <div class="collapsible-header" onclick="toggleKeystore(this)">
+          <div class="config-section-title" style="margin:0">🔐 Keystore (opcional)</div>
+          <span class="collapsible-arrow">▼</span>
+        </div>
+        <div class="collapsible-body" id="keystore-body">
+          <br>
+          <div class="info-box warning">⚠️ Para atualizar app já publicado, use a keystore original. Para novo app, deixe em branco.</div>
+          <div class="upload-area" style="margin-bottom:12px" onclick="document.getElementById('ks-input').click()">
+            <div class="upload-icon">🔑</div>
+            <div class="upload-text">Keystore .jks / .keystore</div>
+            <div class="upload-file-name" id="ks-file-name"></div>
+          </div>
+          <input type="file" id="ks-input" accept=".jks,.keystore" style="display:none" onchange="handleKsSelect(this)">
+          <div class="input-group"><label class="input-label">Keystore Password</label><input type="password" class="input" id="ks-password" /></div>
+          <div class="row-2">
+            <div class="input-group"><label class="input-label">Key Alias</label><input type="text" class="input" id="ks-alias" /></div>
+            <div class="input-group"><label class="input-label">Key Password</label><input type="password" class="input" id="ks-key-password" /></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-secondary" onclick="goBack(1)" style="flex:0 0 auto;width:52px">←</button>
+      <button class="btn btn-primary" onclick="startBuild()" style="flex:1">🚀 Iniciar Build</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Progress -->
+  <div class="progress-card" id="card3">
+    <div class="progress-title">🔨 Buildando...</div>
+    <div class="progress-sub" id="build-type-label">APK · instalação direta</div>
+    <div class="progress-steps">
+      <div class="prog-step" id="ps-1"><div class="prog-icon">📥</div><div class="prog-info"><div class="prog-name">Obtendo projeto</div><div class="prog-detail" id="pd-1">Aguardando...</div></div></div>
+      <div class="prog-step" id="ps-2"><div class="prog-icon">⚙️</div><div class="prog-info"><div class="prog-name">Configurando app</div><div class="prog-detail" id="pd-2">Aguardando...</div></div></div>
+      <div class="prog-step" id="ps-3"><div class="prog-icon">📦</div><div class="prog-info"><div class="prog-name">Instalando dependências</div><div class="prog-detail" id="pd-3">Aguardando...</div></div></div>
+      <div class="prog-step" id="ps-4"><div class="prog-icon">🔑</div><div class="prog-info"><div class="prog-name">Autenticando Expo</div><div class="prog-detail" id="pd-4">Aguardando...</div></div></div>
+      <div class="prog-step" id="ps-5"><div class="prog-icon">🚀</div><div class="prog-info"><div class="prog-name">Build EAS</div><div class="prog-detail" id="pd-5">Aguardando...</div></div></div>
+    </div>
+    <div class="prog-bar-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+    <div class="prog-eta" id="prog-eta">Estimativa: ~10 minutos</div>
+    <div class="log-toggle" onclick="toggleLog()">▼ ver logs</div>
+    <div class="log-box" id="log-box" style="display:none"></div>
+  </div>
+
+  <!-- STEP 4: Result -->
+  <div class="result-card" id="card4">
+    <div class="result-icon">🎉</div>
+    <div class="result-title">Build concluído!</div>
+    <div class="result-sub" id="result-sub">Seu arquivo está pronto.</div>
+    <div class="result-info">
+      <div class="result-info-row"><span class="result-info-label">App</span><span class="result-info-val" id="ri-app">-</span></div>
+      <div class="result-info-row"><span class="result-info-label">Versão</span><span class="result-info-val" id="ri-version">-</span></div>
+      <div class="result-info-row"><span class="result-info-label">Tipo</span><span class="result-info-val" id="ri-type">-</span></div>
+    </div>
+    <button class="btn btn-download" id="btn-download" onclick="downloadFile()">⬇️ Baixar <span id="dl-type">APK</span></button>
+    <button class="btn btn-new" onclick="resetApp()">+ Novo build</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const state = {
+  source: 'github', buildType: 'apk',
+  zipFile: null, ksFile: null, buildUrl: null,
+  jobId: null, pollInterval: null, logVisible: false
+};
+
+// Backend URL
+function getBackendUrl() {
+  return (document.getElementById('backend-url').value || '').trim().replace(/\/$/, '');
+}
+
+async function checkBackend() {
+  const url = getBackendUrl();
+  if (!url) { showToast('⚠️ Cole a URL do backend'); return; }
+  const dot = document.getElementById('backend-dot');
+  try {
+    const r = await fetch(url + '/health', { signal: AbortSignal.timeout(5000) });
+    const data = await r.json();
+    if (data.status === 'ok') {
+      dot.className = 'backend-dot online';
+      showToast('✅ Backend conectado!');
+    } else throw new Error();
+  } catch {
+    dot.className = 'backend-dot offline';
+    showToast('❌ Backend não encontrado');
+  }
+}
+
+// Source/Build toggle
+function selectSource(t) {
+  state.source = t;
+  document.getElementById('btn-github').classList.toggle('selected', t==='github');
+  document.getElementById('btn-zip').classList.toggle('selected', t==='zip');
+  document.getElementById('github-input').style.display = t==='github'?'block':'none';
+  document.getElementById('zip-input-area').style.display = t==='zip'?'block':'none';
+}
+
+function selectBuild(t) {
+  state.buildType = t;
+  document.getElementById('opt-apk').classList.toggle('selected', t==='apk');
+  document.getElementById('opt-aab').classList.toggle('selected', t==='aab');
+  document.getElementById('keystore-section').style.display = t==='aab'?'block':'none';
+}
+
+function handleZipSelect(input) {
+  if (input.files[0]) { state.zipFile = input.files[0]; document.getElementById('upload-file-name').textContent = '✓ ' + input.files[0].name; }
+}
+function handleKsSelect(input) {
+  if (input.files[0]) { state.ksFile = input.files[0]; document.getElementById('ks-file-name').textContent = '✓ ' + input.files[0].name; }
+}
+function toggleKeystore(h) { h.classList.toggle('open'); document.getElementById('keystore-body').classList.toggle('open'); }
+function toggleLog() {
+  state.logVisible = !state.logVisible;
+  document.getElementById('log-box').style.display = state.logVisible ? 'block' : 'none';
+}
+
+function goToStep2() {
+  if (state.source === 'github' && !document.getElementById('github-url').value.includes('github.com')) { showToast('⚠️ Cole um link válido do GitHub'); return; }
+  if (state.source === 'zip' && !state.zipFile) { showToast('⚠️ Selecione o arquivo ZIP'); return; }
+  showCard(2); updateSteps(2);
+}
+
+function goBack(n) { showCard(n); updateSteps(n); }
+
+function showCard(n) {
+  ['card1','card2','card3','card4'].forEach((id,i) => {
+    document.getElementById(id).classList.toggle('active', i+1===n);
+  });
+  document.getElementById('card3').classList.toggle('active', n===3);
+}
+
+function updateSteps(active) {
+  for (let i=1;i<=4;i++) {
+    const s = document.getElementById('s'+i);
+    s.classList.remove('active','done');
+    if (i<active) s.classList.add('done');
+    else if (i===active) s.classList.add('active');
+  }
+  for (let i=1;i<=3;i++) {
+    const l = document.getElementById('line'+i);
+    if(l) l.classList.toggle('done', i<active);
+  }
+}
+
+async function startBuild() {
+  const email = document.getElementById('expo-email').value.trim();
+  const pass = document.getElementById('expo-password').value.trim();
+  const pkg = document.getElementById('app-package').value.trim();
+  const name = document.getElementById('app-name').value.trim();
+  const backendUrl = getBackendUrl();
+
+  if (!backendUrl) { showToast('⚠️ Configure a URL do backend no topo'); return; }
+  if (!email || !pass) { showToast('⚠️ Preencha email e senha da Expo'); return; }
+  if (!pkg) { showToast('⚠️ Informe o package name'); return; }
+  if (!name) { showToast('⚠️ Informe o nome do app'); return; }
+
+  document.getElementById('build-type-label').textContent = state.buildType === 'apk' ? 'APK · instalação direta' : 'AAB · Google Play Store';
+  document.getElementById('dl-type').textContent = state.buildType.toUpperCase();
+
+  showCard(3); updateSteps(3);
+
+  try {
+    let response;
+
+    if (state.source === 'github') {
+      response = await fetch(backendUrl + '/build/github', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          githubUrl: document.getElementById('github-url').value.trim(),
+          githubToken: document.getElementById('github-token').value.trim(),
+          appName: name, appPackage: pkg,
+          appVersion: document.getElementById('app-version').value.trim() || '1.0.0',
+          appVersionCode: document.getElementById('app-version-code').value || '1',
+          buildType: state.buildType, expoEmail: email, expoPassword: pass,
+          ksPassword: document.getElementById('ks-password').value,
+          ksAlias: document.getElementById('ks-alias').value,
+          ksKeyPassword: document.getElementById('ks-key-password').value
+        })
+      });
+    } else {
+      const formData = new FormData();
+      formData.append('zip', state.zipFile);
+      if (state.ksFile) formData.append('keystore', state.ksFile);
+      formData.append('appName', name);
+      formData.append('appPackage', pkg);
+      formData.append('appVersion', document.getElementById('app-version').value.trim() || '1.0.0');
+      formData.append('appVersionCode', document.getElementById('app-version-code').value || '1');
+      formData.append('buildType', state.buildType);
+      formData.append('expoEmail', email);
+      formData.append('expoPassword', pass);
+      formData.append('ksPassword', document.getElementById('ks-password').value);
+      formData.append('ksAlias', document.getElementById('ks-alias').value);
+      formData.append('ksKeyPassword', document.getElementById('ks-key-password').value);
+      response = await fetch(backendUrl + '/build/zip', { method: 'POST', body: formData });
+    }
+
+    const data = await response.json();
+    if (!data.jobId) throw new Error(data.error || 'Erro ao iniciar build');
+    state.jobId = data.jobId;
+    startPolling(backendUrl, data.jobId, name, pkg);
+
+  } catch (err) {
+    showToast('❌ ' + err.message);
+    setStep(1, 'error', err.message);
+  }
+}
+
+function startPolling(backendUrl, jobId, appName, appPackage) {
+  const stepMap = { 1: 'ps-1', 2: 'ps-2', 3: 'ps-3', 4: 'ps-4', 5: 'ps-5', 6: 'ps-5', 7: 'ps-5' };
+  const barMap = { 1: 10, 2: 25, 3: 45, 4: 60, 5: 75, 6: 90, 7: 100 };
+
+  // Usar SSE
+  const evtSource = new EventSource(backendUrl + '/status/' + jobId);
+
+  evtSource.onmessage = (e) => {
+    const job = JSON.parse(e.data);
+
+    // Atualizar log
+    if (job.log) {
+      const logBox = document.getElementById('log-box');
+      logBox.textContent = job.log;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    // Atualizar steps
+    const step = job.step || 1;
+    const psId = stepMap[step] || 'ps-5';
+    const pdId = psId.replace('ps-', 'pd-');
+
+    // Marca steps anteriores como done
+    for (let i = 1; i <= step; i++) {
+      const prevId = stepMap[i];
+      if (prevId && i < step) {
+        document.getElementById(prevId).classList.remove('running');
+        document.getElementById(prevId).classList.add('done');
+      }
+    }
+
+    // Step atual como running
+    document.getElementById(psId).classList.add('running');
+    const pdEl = document.getElementById(pdId);
+    if (pdEl && job.stepName) pdEl.textContent = job.stepName;
+
+    // Barra
+    document.getElementById('prog-bar').style.width = (barMap[step] || 10) + '%';
+
+    if (job.status === 'done') {
+      evtSource.close();
+      // Marca todos done
+      Object.values(stepMap).forEach(id => {
+        document.getElementById(id).classList.remove('running');
+        document.getElementById(id).classList.add('done');
+      });
+      document.getElementById('prog-bar').style.width = '100%';
+      document.getElementById('prog-eta').textContent = 'Concluído!';
+      state.buildUrl = job.buildUrl;
+      showResult(appName, appPackage);
+    }
+
+    if (job.status === 'error') {
+      evtSource.close();
+      document.getElementById(psId).classList.remove('running');
+      document.getElementById(psId).classList.add('error');
+      if (pdEl) pdEl.textContent = '❌ ' + (job.error || 'Erro');
+      document.getElementById('prog-eta').textContent = 'Falhou';
+      showToast('❌ Build falhou: ' + (job.error || 'Erro desconhecido'));
+    }
+  };
+
+  evtSource.onerror = () => {
+    evtSource.close();
+    // Fallback para polling REST
+    state.pollInterval = setInterval(() => pollJob(backendUrl, jobId, appName, appPackage, stepMap, barMap), 3000);
+  };
+}
+
+async function pollJob(backendUrl, jobId, appName, appPackage, stepMap, barMap) {
+  try {
+    const r = await fetch(backendUrl + '/job/' + jobId);
+    const job = await r.json();
+    if (job.status === 'done' || job.status === 'error') {
+      clearInterval(state.pollInterval);
+      if (job.status === 'done') {
+        state.buildUrl = job.buildUrl;
+        showResult(appName, appPackage);
+      }
+    }
+  } catch {}
+}
+
+function showResult(appName, appPackage) {
+  document.getElementById('ri-app').textContent = appName;
+  document.getElementById('ri-version').textContent = document.getElementById('app-version').value || '1.0.0';
+  document.getElementById('ri-type').textContent = state.buildType.toUpperCase();
+  document.getElementById('result-sub').textContent = state.buildType === 'apk'
+    ? 'Seu APK está pronto para instalar direto no celular.'
+    : 'Seu AAB está pronto para enviar à Google Play Store.';
+
+  // Esconde card3, mostra card4
+  document.getElementById('card3').classList.remove('active');
+  document.getElementById('card4').classList.add('active');
+  updateSteps(4);
+}
+
+function downloadFile() {
+  if (state.buildUrl) window.open(state.buildUrl, '_blank');
+  else showToast('⚠️ URL não disponível. Verifique expo.dev/builds');
+}
+
+function resetApp() {
+  if (state.pollInterval) clearInterval(state.pollInterval);
+  ['github-url','github-token','app-name','app-package','app-version','app-version-code','expo-email','expo-password','ks-password','ks-alias','ks-key-password'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('upload-file-name').textContent = '';
+  document.getElementById('ks-file-name').textContent = '';
+  document.getElementById('log-box').textContent = '';
+  document.getElementById('prog-bar').style.width = '0%';
+  ['ps-1','ps-2','ps-3','ps-4','ps-5'].forEach(id => document.getElementById(id).classList.remove('running','done','error'));
+  state.zipFile = null; state.ksFile = null; state.buildUrl = null; state.jobId = null;
+  selectSource('github'); selectBuild('apk');
+  showCard(1); updateSteps(1);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Salvar URL do backend no localStorage
+document.getElementById('backend-url').addEventListener('change', function() {
+  localStorage.setItem('expo-builder-backend', this.value);
+});
+const saved = localStorage.getItem('expo-builder-backend') || 'https://buildspeed-backend-production.up.railway.app';
+document.getElementById('backend-url').value = saved; checkBackend();
+</script>
+</body>
+</html>
