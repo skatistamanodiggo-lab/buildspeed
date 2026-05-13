@@ -356,6 +356,47 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .btn-autofix { background: linear-gradient(135deg, #06d6a0, #059669); color: var(--bg); font-weight: 800; border: none; border-radius: 10px; padding: 13px; width: 100%; font-family: "Syne",sans-serif; font-size: 14px; cursor: pointer; margin-bottom: 8px; }
 .btn-autofix:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* ── ANÁLISE PRÉVIA ── */
+.analyze-modal .modal-box { max-width: 460px; text-align: left; max-height: 88vh; overflow-y: auto; }
+.analyze-header { text-align: center; padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.analyze-score { font-size: 48px; margin-bottom: 6px; }
+.analyze-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+.analyze-sub { font-size: 12px; color: var(--text2); font-family: "Space Mono",monospace; }
+.analyze-section-title { font-size: 11px; font-family: "Space Mono",monospace; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin: 14px 0 8px; }
+.analyze-item { border-radius: 10px; padding: 11px 13px; margin-bottom: 8px; border: 1px solid var(--border); }
+.analyze-item.high { border-color: rgba(124,58,237,0.35); background: rgba(124,58,237,0.07); }
+.analyze-item.medium { border-color: rgba(251,191,36,0.3); background: rgba(251,191,36,0.06); }
+.analyze-item.low { border-color: var(--border); background: var(--surface2); }
+.analyze-item.critical { border-color: rgba(247,37,133,0.4); background: rgba(247,37,133,0.08); }
+.analyze-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.analyze-item-title { font-size: 13px; font-weight: 700; }
+.analyze-badge { font-size: 10px; font-family: "Space Mono",monospace; padding: 2px 8px; border-radius: 20px; font-weight: 700; white-space: nowrap; }
+.badge-autofix { background: rgba(6,214,160,0.15); color: var(--accent2); }
+.badge-manual { background: rgba(247,37,133,0.15); color: #f72585; }
+.badge-warn { background: rgba(251,191,36,0.15); color: #fcd34d; }
+.analyze-item-desc { font-size: 11px; color: var(--text2); font-family: "Space Mono",monospace; line-height: 1.6; }
+.analyze-loading { text-align: center; padding: 32px; font-family: "Space Mono",monospace; font-size: 12px; color: var(--text2); }
+.analyze-spinner { font-size: 28px; animation: spin 1s linear infinite; display: block; margin-bottom: 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RELATÓRIO DE MUDANÇAS ── */
+.changes-modal .modal-box { max-width: 460px; text-align: left; max-height: 85vh; overflow-y: auto; }
+.changes-header { text-align: center; margin-bottom: 16px; }
+.changes-icon { font-size: 36px; margin-bottom: 8px; }
+.changes-title { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+.changes-sub { font-size: 12px; color: var(--text2); font-family: "Space Mono",monospace; }
+.change-item { border-radius: 10px; padding: 12px; margin-bottom: 10px; border: 1px solid var(--border); }
+.change-item.important { border-color: rgba(124,58,237,0.3); background: rgba(124,58,237,0.06); }
+.change-item.warning { border-color: rgba(247,37,133,0.3); background: rgba(247,37,133,0.06); }
+.change-item.info { border-color: var(--border); background: var(--surface2); }
+.change-item-title { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+.change-item-desc { font-size: 12px; color: var(--text2); font-family: "Space Mono",monospace; line-height: 1.6; margin-bottom: 6px; }
+.change-impact { display: inline-block; font-size: 10px; font-family: "Space Mono",monospace; padding: 2px 8px; border-radius: 20px; font-weight: 700; }
+.impact-none { background: rgba(6,214,160,0.15); color: var(--accent2); }
+.impact-visual { background: rgba(251,191,36,0.15); color: #fcd34d; }
+.impact-critical { background: rgba(247,37,133,0.15); color: #f72585; }
+.changes-nochanges { text-align: center; padding: 20px; color: var(--text2); font-family: "Space Mono",monospace; font-size: 12px; }
+
 /* ── BOTÃO PROMPT IA ── */
 .btn-ai-fix { background: linear-gradient(135deg, #7c3aed, #9333ea); color: white; font-weight: 800; border: none; border-radius: 10px; padding: 13px; width: 100%; font-family: "Syne",sans-serif; font-size: 14px; cursor: pointer; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .ai-prompt-modal .modal-box { max-width: 460px; text-align: left; }
@@ -532,7 +573,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     </div>
     <div style="display:flex;gap:10px">
       <button class="btn btn-secondary" onclick="goBack(1)" style="flex:0 0 auto;width:52px">←</button>
-      <button class="btn btn-primary" onclick="startBuild()" style="flex:1">🚀 Iniciar Build</button>
+      <button class="btn btn-primary" onclick="startBuildWithAnalysis()" style="flex:1">🚀 Iniciar Build</button>
     </div>
   </div>
 
@@ -634,6 +675,58 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
   </div>
 </div>
 
+<!-- Modal Análise Prévia -->
+<div class="modal-overlay analyze-modal" id="analyze-modal" style="display:none">
+  <div class="modal-box">
+    <div id="analyze-loading" class="analyze-loading">
+      <span class="analyze-spinner">🔍</span>
+      Analisando compatibilidade do projeto...<br>
+      <span style="font-size:10px;margin-top:8px;display:block">Isso leva apenas alguns segundos</span>
+    </div>
+    <div id="analyze-result" style="display:none">
+      <div class="analyze-header">
+        <div class="analyze-score" id="analyze-score">✅</div>
+        <div class="analyze-title" id="analyze-title">Análise concluída</div>
+        <div class="analyze-sub" id="analyze-sub"></div>
+      </div>
+      <div id="analyze-changes-section" style="display:none">
+        <div class="analyze-section-title">🔧 Correções automáticas</div>
+        <div id="analyze-changes-list"></div>
+      </div>
+      <div id="analyze-warnings-section" style="display:none">
+        <div class="analyze-section-title">⚠️ Avisos importantes</div>
+        <div id="analyze-warnings-list"></div>
+      </div>
+      <div id="analyze-ok-msg" style="display:none" class="analyze-item low" style="text-align:center">
+        <div class="analyze-item-title" style="text-align:center">🎉 Projeto 100% compatível!</div>
+        <div class="analyze-item-desc" style="text-align:center;margin-top:4px">Nenhuma correção necessária. O build pode iniciar imediatamente.</div>
+      </div>
+    </div>
+    <div id="analyze-actions" style="display:none;margin-top:16px">
+      <button class="btn btn-primary" id="btn-confirm-build" onclick="confirmBuild()" style="margin-bottom:10px;padding:14px">
+        🚀 Confirmar e Iniciar Build
+      </button>
+      <button class="btn-modal-close" onclick="cancelAnalysis()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Relatório de Mudanças -->
+<div class="modal-overlay changes-modal" id="changes-modal" style="display:none" onclick="if(event.target===this)closeChangesModal()">
+  <div class="modal-box">
+    <div class="changes-header">
+      <div class="changes-icon">🔧</div>
+      <div class="changes-title">Relatório de Compatibilidade</div>
+      <div class="changes-sub" id="changes-subtitle">Seu projeto foi analisado e otimizado para o build.</div>
+    </div>
+    <div id="changes-list"></div>
+    <button class="btn btn-primary" onclick="proceedDownload()" style="margin-top:4px;margin-bottom:10px;padding:13px">
+      ⬇️ Baixar meu app
+    </button>
+    <button class="btn-modal-close" onclick="closeChangesModal()">Fechar</button>
+  </div>
+</div>
+
 <!-- Modal Avaliação -->
 <div class="modal-overlay rating-modal" id="rating-modal" style="display:none">
   <div class="modal-box">
@@ -690,7 +783,7 @@ const state = {
   zipFile: null, ksFile: null, buildUrl: null,
   jobId: null, pollInterval: null, logVisible: false,
   currentUser: null, isGuest: false, countdownTimer: null, msgTimer: null,
-  buildStartTime: null, currentLog: ''
+  buildStartTime: null, currentLog: '', validationChanges: []
 };
 
 const BACKEND_URL = 'https://buildspeed-backend-production.up.railway.app';
@@ -1284,6 +1377,10 @@ function fallbackPoll(backendUrl, jobId, appName, appPkg, stepMap, barMap) {
 }
 
 function processJobUpdate(job, appName, appPkg, stepMap, barMap, evtSource) {
+  // Salvar validationChanges
+  if (job.validationChanges) {
+    state.validationChanges = job.validationChanges;
+  }
   // Log
   if (job.log) {
     state.currentLog = job.log;
@@ -1369,7 +1466,13 @@ function showResult(appName) {
 
 function downloadFile() {
   if (!state.buildUrl) { showToast('⚠️ Verifique expo.dev/builds'); return; }
-  document.getElementById('download-modal').style.display = 'flex';
+  // Mostrar relatório de mudanças antes do download
+  const changes = state.validationChanges || [];
+  if (changes.length > 0) {
+    showChangesModal(changes, state.buildUrl);
+  } else {
+    document.getElementById('download-modal').style.display = 'flex';
+  }
 }
 
 function confirmDownloadAndRate() {
@@ -1434,6 +1537,196 @@ function resetApp() {
   // Voltar ao dashboard
   document.getElementById('app-main').style.display = 'none';
   showDashboard();
+}
+
+// ══════════════════════════════════
+// ANÁLISE PRÉVIA
+// ══════════════════════════════════
+let pendingBuildParams = null;
+
+async function startBuildWithAnalysis() {
+  const name = document.getElementById('app-name').value.trim();
+  const pkg = document.getElementById('app-package').value.trim();
+  const backendUrl = getBackendUrl();
+  if (!backendUrl) { showToast('⚠️ Configure a URL do backend'); return; }
+  if (!name) { showToast('⚠️ Informe o nome do app'); return; }
+
+  // Abrir modal de análise
+  document.getElementById('analyze-modal').style.display = 'flex';
+  document.getElementById('analyze-loading').style.display = 'block';
+  document.getElementById('analyze-result').style.display = 'none';
+  document.getElementById('analyze-actions').style.display = 'none';
+
+  // Salvar params para o build
+  pendingBuildParams = { name, pkg, backendUrl };
+
+  try {
+    let analysisData;
+    if (state.source === 'github') {
+      const r = await fetch(backendUrl + '/analyze/github', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ githubUrl: document.getElementById('github-url').value.trim() })
+      });
+      analysisData = await r.json();
+    } else if (state.zipFile) {
+      const fd = new FormData();
+      fd.append('zip', state.zipFile);
+      const r = await fetch(backendUrl + '/analyze/zip', { method: 'POST', body: fd });
+      analysisData = await r.json();
+    } else {
+      throw new Error('Selecione um projeto');
+    }
+
+    renderAnalysis(analysisData.analysis || {});
+  } catch(e) {
+    // Se análise falhar, mostrar aviso simples e permitir build mesmo assim
+    renderAnalysisError(e.message);
+  }
+}
+
+function renderAnalysis(a) {
+  document.getElementById('analyze-loading').style.display = 'none';
+  document.getElementById('analyze-result').style.display = 'block';
+  document.getElementById('analyze-actions').style.display = 'block';
+
+  const changes = a.changes || [];
+  const warnings = a.warnings || [];
+  const total = changes.length + warnings.length;
+  const hasCritical = warnings.some(w => w.severity === 'critical');
+
+  // Score
+  const scoreEl = document.getElementById('analyze-score');
+  const titleEl = document.getElementById('analyze-title');
+  const subEl = document.getElementById('analyze-sub');
+
+  if (hasCritical) {
+    scoreEl.textContent = '⚠️';
+    titleEl.textContent = 'Atenção necessária';
+    subEl.textContent = 'Encontramos problemas que podem impedir o build.';
+  } else if (total === 0) {
+    scoreEl.textContent = '✅';
+    titleEl.textContent = 'Projeto compatível!';
+    subEl.textContent = 'Nenhuma correção necessária.';
+  } else {
+    scoreEl.textContent = '🔧';
+    titleEl.textContent = changes.length + ' correção(ões) automática(s)';
+    subEl.textContent = 'Aplicaremos automaticamente antes do build, sem alterar funcionalidades.';
+  }
+
+  // Mostrar ok msg
+  document.getElementById('analyze-ok-msg').style.display = total === 0 ? 'block' : 'none';
+
+  // Changes
+  const changesSection = document.getElementById('analyze-changes-section');
+  const changesList = document.getElementById('analyze-changes-list');
+  if (changes.length > 0) {
+    changesSection.style.display = 'block';
+    changesList.innerHTML = changes.map(c => `
+      <div class="analyze-item ${c.severity || 'low'}">
+        <div class="analyze-item-header">
+          <span class="analyze-item-title">${c.title}</span>
+          <span class="analyze-badge badge-autofix">✅ automático</span>
+        </div>
+        <div class="analyze-item-desc">${c.desc}</div>
+        ${c.impact && c.impact !== 'none' ? `<div style="margin-top:6px"><span class="analyze-badge badge-warn">🎨 ${c.impact === 'visual_minor' ? 'Impacto visual leve' : c.impact}</span></div>` : ''}
+      </div>`).join('');
+  } else {
+    changesSection.style.display = 'none';
+  }
+
+  // Warnings
+  const warnSection = document.getElementById('analyze-warnings-section');
+  const warnList = document.getElementById('analyze-warnings-list');
+  if (warnings.length > 0) {
+    warnSection.style.display = 'block';
+    warnList.innerHTML = warnings.map(w => `
+      <div class="analyze-item ${w.severity || 'medium'}">
+        <div class="analyze-item-header">
+          <span class="analyze-item-title">${w.title}</span>
+          <span class="analyze-badge badge-${w.severity === 'critical' ? 'manual' : 'warn'}">${w.severity === 'critical' ? '⚠️ atenção' : '⚡ risco'}</span>
+        </div>
+        <div class="analyze-item-desc">${w.desc}</div>
+      </div>`).join('');
+  } else {
+    warnSection.style.display = 'none';
+  }
+
+  // Botão de confirmar
+  const btnConfirm = document.getElementById('btn-confirm-build');
+  if (hasCritical) {
+    btnConfirm.textContent = '🚀 Tentar mesmo assim';
+    btnConfirm.style.background = 'linear-gradient(135deg,#f72585,#b5179e)';
+  } else {
+    btnConfirm.textContent = changes.length > 0 ? '🔧 Aplicar correções e buildar' : '🚀 Iniciar Build';
+    btnConfirm.style.background = '';
+  }
+}
+
+function renderAnalysisError(msg) {
+  document.getElementById('analyze-loading').style.display = 'none';
+  document.getElementById('analyze-result').style.display = 'block';
+  document.getElementById('analyze-actions').style.display = 'block';
+  document.getElementById('analyze-score').textContent = '⚡';
+  document.getElementById('analyze-title').textContent = 'Análise rápida indisponível';
+  document.getElementById('analyze-sub').textContent = 'Não foi possível analisar o projeto previamente. O build tentará corrigir automaticamente.';
+  document.getElementById('analyze-ok-msg').style.display = 'none';
+  document.getElementById('analyze-changes-section').style.display = 'none';
+  document.getElementById('analyze-warnings-section').style.display = 'none';
+  document.getElementById('btn-confirm-build').textContent = '🚀 Iniciar Build mesmo assim';
+}
+
+function cancelAnalysis() {
+  document.getElementById('analyze-modal').style.display = 'none';
+  pendingBuildParams = null;
+}
+
+async function confirmBuild() {
+  document.getElementById('analyze-modal').style.display = 'none';
+  await startBuild();
+}
+
+// ══════════════════════════════════
+// RELATÓRIO DE MUDANÇAS
+// ══════════════════════════════════
+let pendingDownloadUrl = null;
+
+function showChangesModal(changes, downloadUrl) {
+  pendingDownloadUrl = downloadUrl;
+  const list = document.getElementById('changes-list');
+  const subtitle = document.getElementById('changes-subtitle');
+  
+  const important = changes.filter(c => c.important);
+  
+  if (changes.length === 0) {
+    subtitle.textContent = '✅ Seu projeto estava 100% compatível. Nenhuma alteração foi necessária.';
+    list.innerHTML = '<div class="changes-nochanges">🎉 Nenhuma correção necessária!</div>';
+  } else {
+    subtitle.textContent = important.length + ' ajuste(s) aplicado(s) para garantir compatibilidade.';
+    list.innerHTML = changes.filter(c => c.important).map(c => {
+      const cls = c.type === 'warning' ? 'warning' : 'important';
+      const impactCls = c.impact === 'none' ? 'impact-none' : c.impact === 'critical' ? 'impact-critical' : 'impact-visual';
+      const impactLabel = c.impact === 'none' ? '✅ Sem impacto no app' : c.impact === 'critical' ? '⚠️ Atenção necessária' : '🎨 Impacto visual leve';
+      return `<div class="change-item ${cls}">
+        <div class="change-item-title">${c.title}</div>
+        <div class="change-item-desc">${c.desc}</div>
+        <span class="change-impact ${impactCls}">${impactLabel}</span>
+      </div>`;
+    }).join('') || '<div class="changes-nochanges">Apenas ajustes técnicos menores foram aplicados.</div>';
+  }
+  
+  document.getElementById('changes-modal').style.display = 'flex';
+}
+
+function closeChangesModal() {
+  document.getElementById('changes-modal').style.display = 'none';
+}
+
+function proceedDownload() {
+  closeChangesModal();
+  if (pendingDownloadUrl) {
+    window.open(pendingDownloadUrl, '_blank');
+    setTimeout(() => openRatingModal(), 3000);
+  }
 }
 
 // ══════════════════════════════════
