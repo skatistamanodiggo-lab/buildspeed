@@ -401,6 +401,12 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .btn-ai-fix { background: linear-gradient(135deg, #7c3aed, #9333ea); color: white; font-weight: 800; border: none; border-radius: 10px; padding: 13px; width: 100%; font-family: "Syne",sans-serif; font-size: 14px; cursor: pointer; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
 .ai-prompt-modal .modal-box { max-width: 460px; text-align: left; }
 .ai-prompt-box { width: 100%; background: #0d0d14; border: 1px solid var(--border); border-radius: 10px; padding: 12px; font-family: "Space Mono",monospace; font-size: 10px; color: #88cc88; height: 200px; resize: none; outline: none; line-height: 1.5; margin-bottom: 12px; }
+/* ── AUTO-FIX BANNER ── */
+.autofix-banner { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); border-radius: 10px; padding: 10px 14px; margin-bottom: 10px; display: none; animation: fadeUp 0.3s ease; }
+.autofix-banner.active { display: block; }
+.autofix-banner-title { font-size: 13px; font-weight: 800; color: #fcd34d; margin-bottom: 4px; }
+.autofix-banner-desc { font-size: 11px; color: var(--text2); font-family: "Space Mono",monospace; line-height: 1.5; }
+
 /* ── TOAST ── */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:13px;font-family:'Space Mono',monospace;z-index:300;transition:transform 0.3s;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
 .toast.show{transform:translateX(-50%) translateY(0)}
@@ -601,6 +607,10 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <button class="btn-autofix" id="btn-autofix" onclick="applyAutofix()">🔧 Corrigir automaticamente e tentar novamente</button>
       <button class="btn-ai-fix" onclick="openAiPrompt()">🤖 Corrigir com IA — Ver prompt</button>
       <button class="btn-modal-close" onclick="document.getElementById('diagnosis-card').classList.remove('active')">Fechar</button>
+    </div>
+    <div class="autofix-banner" id="autofix-banner">
+      <div class="autofix-banner-title">🔧 Erro detectado — corrigindo automaticamente</div>
+      <div class="autofix-banner-desc" id="autofix-banner-desc">Foram identificados problemas durante o build. Aplicando correções e reiniciando — pode demorar um pouco mais que o normal.</div>
     </div>
     <div id="error-ai-btn" style="display:none;margin-bottom:8px">
       <button class="btn-ai-fix" onclick="openAiPrompt()">🤖 PROMPT para Corrigir seu app com I.A.</button>
@@ -1381,6 +1391,19 @@ function processJobUpdate(job, appName, appPkg, stepMap, barMap, evtSource) {
   if (job.validationChanges) {
     state.validationChanges = job.validationChanges;
   }
+  // Mostrar banner de auto-fix se ativo
+  const autofixBanner = document.getElementById('autofix-banner');
+  const autofixDesc = document.getElementById('autofix-banner-desc');
+  if (autofixBanner) {
+    if (job.autoFixing) {
+      autofixBanner.classList.add('active');
+      if (autofixDesc && job.autoFixDesc) {
+        autofixDesc.textContent = '🔧 Correção aplicada: ' + job.autoFixDesc + '. Reiniciando build — pode demorar um pouco mais que o normal.';
+      }
+    } else {
+      autofixBanner.classList.remove('active');
+    }
+  }
   // Log
   if (job.log) {
     state.currentLog = job.log;
@@ -1532,6 +1555,8 @@ function resetApp() {
   state.zipFile = null; state.ksFile = null; state.buildUrl = null; state.jobId = null; state.currentLog = '';
   const aiBtn = document.getElementById('error-ai-btn');
   if (aiBtn) aiBtn.style.display = 'none';
+  const afBanner = document.getElementById('autofix-banner');
+  if (afBanner) afBanner.classList.remove('active');
   selectSource('github'); selectBuild('apk');
   showCard(1); updateSteps(1);
   // Voltar ao dashboard
