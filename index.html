@@ -900,7 +900,7 @@ function buildCard(b) {
       <span class="build-item-name">${b.appName || 'Build'} · ${b.buildType?.toUpperCase()}</span>
       <span class="build-item-badge ${badge}">${label}</span>
     </div>
-    <div class="build-item-meta">${b.pkg || ''} · ${ago}</div>
+    <div class="build-item-meta">${b.pkg || ''} · ${ago}${b.expoAccount ? ' · ' + b.expoAccount : ''}</div>
     ${warn}${actions}
   </div>`;
 }
@@ -1391,6 +1391,15 @@ function processJobUpdate(job, appName, appPkg, stepMap, barMap, evtSource) {
   if (job.validationChanges) {
     state.validationChanges = job.validationChanges;
   }
+  // Mostrar conta Expo usada
+  if (job.expoAccount) {
+    const label = document.getElementById('build-type-label');
+    if (label && !label.textContent.includes('·')) {
+      label.textContent += ' · conta: ' + job.expoAccount;
+    } else if (label && !label.textContent.includes('conta:')) {
+      label.textContent += ' · ' + job.expoAccount;
+    }
+  }
   // Mostrar banner de auto-fix se ativo
   const autofixBanner = document.getElementById('autofix-banner');
   const autofixDesc = document.getElementById('autofix-banner-desc');
@@ -1452,7 +1461,8 @@ function processJobUpdate(job, appName, appPkg, stepMap, barMap, evtSource) {
     saveBuild({
       id: state.jobId, appName, pkg: appPkg, buildType: state.buildType,
       status: 'done', startTime: state.buildStartTime, buildUrl: job.buildUrl,
-      log: job.log || state.currentLog || 'Log não disponível'
+      log: job.log || state.currentLog || 'Log não disponível',
+      expoAccount: job.expoAccount || ''
     });
     showResult(appName);
   }
@@ -1467,7 +1477,8 @@ function processJobUpdate(job, appName, appPkg, stepMap, barMap, evtSource) {
     saveBuild({
       id: state.jobId, appName, pkg: appPkg, buildType: state.buildType,
       status: 'error', startTime: state.buildStartTime, buildUrl: null,
-      log: job.log || state.currentLog || 'Log não disponível'
+      log: job.log || state.currentLog || 'Log não disponível',
+      expoAccount: job.expoAccount || ''
     });
   }
 }
